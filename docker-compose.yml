@@ -1,0 +1,71 @@
+version: '3.5'
+
+services:
+  lbria_dFront_service:
+    container_name: lbria_dfront
+    image: nginx:1.20.1
+    restart: always
+    volumes:
+      - /home/donbungle/Proyectos/devices/dFront/:/usr/share/nginx/html
+    ports:
+        - "6001:80"
+
+  lbria_app:
+    container_name: lbria_app
+    restart: always
+    build:
+      context: ./
+    command: sh -c "cd libreria && python manage.py runserver 0.0.0.0:8000"
+    ports:
+      - "6002:8000"
+    volumes:
+      - ./:/app
+    links:
+      - lbria_postgres
+    environment:
+      POSTGRES_PASSWORD: '1q2w3e4r5t'
+      POSTGRES_USER: 'postgres'
+      POSTGRES_URL: postgres
+      POSTGRES_DB: 'base_db'
+    networks:
+      - lbria_nw_postgres
+    depends_on:
+      - lbria_postgres
+
+  lbria_postgres:
+    container_name: lbria_db
+    image: postgres:14-alpine
+    environment:
+      POSTGRES_DB: 'base_db'
+      POSTGRES_USER: 'postgres'
+      POSTGRES_PASSWORD: '1q2w3e4r5t'
+      PGDATA: /data/postgres
+    volumes:
+      - lbria_vol_postgres:/data/postgres
+    ports:
+      - "6003:5432"
+    networks:
+      - lbria_nw_postgres
+    restart: unless-stopped
+
+  lbria_pgadmin:
+    container_name: lbria_db_admin
+    image: dpage/pgadmin4:6.7
+    environment:
+      PGADMIN_DEFAULT_EMAIL: 'victor.catalan@device.cl'
+      PGADMIN_DEFAULT_PASSWORD: '123456'
+    volumes:
+      - lbria_vol_pgadmin:/root/.pgadmin
+    ports:
+      - "6004:80"
+    networks:
+      - lbria_nw_postgres
+    restart: unless-stopped
+
+networks:
+    lbria_nw_postgres:
+      driver: bridge
+
+volumes:
+    lbria_vol_postgres:
+    lbria_vol_pgadmin:
